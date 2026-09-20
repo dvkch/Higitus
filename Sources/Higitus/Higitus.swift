@@ -8,7 +8,7 @@
 import ArgumentParser
 
 @main
-struct Peekaboo: ParsableCommand {
+struct Higitus: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "higitus",
         abstract: "Organizes your download folder.",

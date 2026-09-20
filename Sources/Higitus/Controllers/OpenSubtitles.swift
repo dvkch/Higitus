@@ -83,7 +83,7 @@ final class OpenSubtitlesClient {
     ) throws(AppError) -> Data {
         // Build request
         var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-        if !query.isEmpty {
+        if query.isNotEmpty {
             components.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) }
         }
 
@@ -95,7 +95,12 @@ final class OpenSubtitlesClient {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         if let body {
-            request.httpBody = try! JSONSerialization.data(withJSONObject: body)
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            }
+            catch {
+                throw .notSerializable(body)
+            }
         }
 
         // Run request synchronously

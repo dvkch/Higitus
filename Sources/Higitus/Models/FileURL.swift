@@ -29,7 +29,7 @@ struct FileURL {
         return p
     }
     var asNSURL: NSURL { url as NSURL }
-    var asMedia: Media? { try? Media(url: self) }
+    var asMedia: Media? { try? Media(self) }
 }
 
 extension FileURL: Hashable, Equatable, Comparable {
@@ -60,6 +60,15 @@ extension FileURL {
     func touch(contents: String? = nil) {
         if !FileManager.default.fileExists(atPath: asPath) {
             FileManager.default.createFile(atPath: asPath, contents: contents?.data(using: .utf8))
+        }
+    }
+    
+    func delete() throws(AppError) {
+        do {
+            try FileManager.default.removeItem(at: asURL)
+        }
+        catch {
+            throw .fileError(self, error)
         }
     }
 

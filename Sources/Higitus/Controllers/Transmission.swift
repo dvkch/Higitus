@@ -23,7 +23,14 @@ struct Transmission {
         json["script-torrent-done-enabled"] = true
         json["script-torrent-done-filename"] = hook
 
-        let newData = try! JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted])
+        let newData: Data
+        
+        do {
+            newData = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted])
+        }
+        catch {
+            throw AppError.notSerializable(json)
+        }
 
         do {
             try newData.write(to: configURL.asURL)

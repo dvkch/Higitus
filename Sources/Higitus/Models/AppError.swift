@@ -16,6 +16,8 @@ enum AppError {
     case hunchError(String)
     case couldntGeneratePath(FileURL, HunchResult)
     case notAMediaFile(FileURL)
+    case notSerializable(Any)
+    case fileError(FileURL, Error)
 }
 
 extension AppError: LocalizedError {
@@ -36,6 +38,10 @@ extension AppError: LocalizedError {
         case .couldntGeneratePath(let url, let result): "Couldn't generate a proper filename for \(url.asPath): \(result)"
             
         case .notAMediaFile(let url): "File at \(url.asPath) is not a media file"
+            
+        case .notSerializable(let data): "Data is not serializable: \(data)"
+            
+        case .fileError(let url, let error): "Error encountered during file operation at \(url.asPath): \(error.localizedDescription)"
         }
     }
 }

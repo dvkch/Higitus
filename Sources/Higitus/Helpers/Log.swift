@@ -1,6 +1,6 @@
 //
 //  Log.swift
-//  peekaboo
+//  Higitus
 //
 //  Created by syan on 05/09/2026.
 //

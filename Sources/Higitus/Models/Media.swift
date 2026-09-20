@@ -8,15 +8,21 @@
 import Foundation
 
 struct Media {
-    init(url: FileURL) throws(AppError) {
-        self.url = url
+    init(_ url: FileURL) throws(AppError) {
+        self.mediaURL = url
         guard Media.supportedExtensions.contains(url.asURL.pathExtension) else {
             throw .notAMediaFile(url)
         }
     }
     
     // MARK: Properties
-    let url: FileURL
+    let mediaURL: FileURL
+}
+
+extension Media: Comparable {
+    static func < (lhs: Media, rhs: Media) -> Bool {
+        lhs.mediaURL < rhs.mediaURL
+    }
 }
 
 extension Media {
@@ -26,18 +32,22 @@ extension Media {
 }
 
 extension Media {
-    func findSubtitles() -> [FileURL] {
-        let languageLessSubtitleURL = url.replacingExtension(with: "srt")
-        if languageLessSubtitleURL.exists {
-            let newSubtitleURL = languageLessSubtitleURL.replacingExtension(with: "en.srt")
-            try! FileManager.default.moveItem(at: languageLessSubtitleURL.asURL, to: newSubtitleURL.asURL)
+    func findSubtitles() throws -> [String: FileURL] {
+        guard let parent = mediaURL.parent else { return [:] }
+        let mediaURLWithoutExtension = mediaURL.asURL.deletingPathExtension().path(percentEncoded: false)
+        
+        var subtitles = [String: FileURL]()
+        
+        for file in try FileManager.default.children(at: parent, ignoringUnderscores: false) {
+            guard file.asURL.pathExtension.lowercased() == "srt" else { continue }
+            guard file.asPath.hasPrefix(mediaURLWithoutExtension) else { continue }
+            
+            let subtitleName = file.asPath.replacingOccurrences(of: mediaURLWithoutExtension + ".", with: "", options: .caseInsensitive).lowercased()
+            var language = subtitleName.split(separator: ".").first ?? "en"
+            if language == "srt" { language = "en" }
+            subtitles[String(language)] = file
         }
         
-        guard let parent = url.parent else { return [] }
-        
-        let pattern = url.asURL.deletingPathExtension().path(percentEncoded: false) + ".*.srt"
-        return FileManager.default.children(at: parent, ignoringUnderscores: false).filter {
-            $0.matchesPattern(pattern)
-        }
+        return subtitles
     }
 }

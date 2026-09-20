@@ -28,7 +28,14 @@ struct CommandFigitus: ParsableCommand {
     
     mutating func run() throws {
         Log.level = logLevel
-        
+
+        let moviesURL = FileURL(path: moviesFolder)
+        let showsURL = FileURL(path: showsFolder)
+        let downloadsURL = FileURL(path: path)
+        guard moviesURL.exists else { fatalError("Movies folder not found at \(moviesURL.asPath)") }
+        guard showsURL.exists else { fatalError("Shows folder not found at \(showsURL.asPath)") }
+        guard downloadsURL.exists else { fatalError("Downloads folder not found at \(downloadsURL.asPath)") }
+
         let lock = Lock(url: Config.lockFileURL)
         guard lock.acquire() else {
             print("Already running, marked need for a new run once the current one is done")
@@ -39,7 +46,7 @@ struct CommandFigitus: ParsableCommand {
 
         try? FileManager.default.removeItem(atPath: Config.runAgainFlagURL.asPath)
 
-        runOnce()
+        try runOnce(downloadsURL: downloadsURL, moviesURL: moviesURL, showsURL: showsURL)
 
         if Config.runAgainFlagURL.exists {
             print("Needs another run, starting now!")
@@ -47,36 +54,28 @@ struct CommandFigitus: ParsableCommand {
         }
     }
     
-    private func runOnce() {
-        let moviesURL = FileURL(path: moviesFolder)
-        let showsURL = FileURL(path: showsFolder)
-        let downloadsURL = FileURL(path: path)
+    private func runOnce(downloadsURL: FileURL, moviesURL: FileURL, showsURL: FileURL) throws(AppError) {
 
         print("Organizing: \(downloadsURL.asPath)")
         
-        var pathsToOrganize = [downloadsURL]
-        pathsToOrganize += FileManager.default.children(at: downloadsURL, ignoringUnderscores: true).filter { $0.isDirectory }
-        
-        for p in pathsToOrganize {
-            let medias = FileManager.default.children(at: p, ignoringUnderscores: true).compactMap(\.asMedia)
-            for m in medias {
-                let relM = m.url.asPath(relativeTo: downloadsURL)
-                do {
-                    print("---------------")
-                    Log.i(relM, "TODO: Download subtitles")
+        let medias = try FileManager.default.mediaFiles(under: downloadsURL)
+        for m in medias {
+            let relM = m.mediaURL.asPath(relativeTo: downloadsURL)
+            do {
+                print("---------------")
+                Log.i(relM, "TODO: Download subtitles")
 
-                    let hunch = try Hunch.analyze(m.url, inside: downloadsURL)
-                    let newMediaURL = try m.url.suggestURL(using: hunch, moviesRoot: moviesURL, seriesRoot: showsURL)
-                    Log.i(relM, "Found \(m.findSubtitles().count) subtitles")
-                    Log.i(relM, "TODO: Move to \(newMediaURL.asPath)")
-                    Log.i(relM, "TODO: Move subtitles too")
-                }
-                catch {
-                    Log.e(relM, "Error: \(error.localizedDescription)")
-                }
+                let hunch = try Hunch.analyze(m.mediaURL, inside: downloadsURL)
+                let newMediaURL = try m.mediaURL.suggestURL(using: hunch, moviesRoot: moviesURL, seriesRoot: showsURL)
+                Log.i(relM, "Found subtitles: \(try m.findSubtitles().keys.joined(separator: ", "))")
+                Log.i(relM, "TODO: Move to \(newMediaURL.asPath)")
+                Log.i(relM, "TODO: Move subtitles too")
+            }
+            catch {
+                Log.e(relM, "Error: \(error.localizedDescription)")
             }
         }
         
-        FileManager.default.cleanup(at: downloadsURL)
+        try FileManager.default.cleanup(at: downloadsURL, isDeletable: false)
     }
 }
