@@ -47,17 +47,44 @@ struct CommandFigitus: ParsableCommand {
     
     private func runOnce(downloadsURL: FileURL, moviesURL: FileURL, showsURL: FileURL) throws(AppError) {
         print("Organizing: \(downloadsURL.asPath)")
+
+        let opensubtitles = OpenSubtitlesClient(
+            apiKey: options.opensubtitlesApiKey,
+            username: options.opensubtitlesUsername,
+            password: options.opensubtitlesPassword
+        )
+        try opensubtitles.login()
         
         let medias = try FileManager.default.mediaFiles(under: downloadsURL)
         for m in medias {
             let relM = m.mediaURL.asPath(relativeTo: downloadsURL)
             do {
                 print("---------------")
-                Log.i(relM, "TODO: Download subtitles")
+                Log.i(relM, "Analyzing")
 
                 let hunch = try Hunch.analyze(m.mediaURL, inside: downloadsURL)
                 let newMediaURL = try m.mediaURL.suggestURL(using: hunch, moviesRoot: moviesURL, seriesRoot: showsURL)
-                Log.i(relM, "Found subtitles: \(try m.findSubtitles().keys.joined(separator: ", "))")
+                let existingSubtitles = try m.findSubtitles()
+                Log.i(relM, "Found subtitles: \(existingSubtitles.keys.joined(separator: ", "))")
+
+                let subtitlesToDownload = Set(options.subtitlesLocalesArray).subtracting(existingSubtitles.keys)
+                Log.i(relM, "Will download subtitles: \(subtitlesToDownload.joined(separator: ", "))")
+                for locale in subtitlesToDownload {
+                    do {
+                        let file = try opensubtitles.search(
+                            hunch: hunch, hash: m.mediaURL.openSubtitlesHash(), language: locale
+                        )
+                        guard let file else {
+                            Log.w(relM, "No available subtitles for \(locale)")
+                            continue
+                        }
+                        try opensubtitles.download(file, to: m.mediaURL.replacingExtension(with: "\(locale).srt"))
+                    }
+                    catch {
+                        Log.e(relM, "Couldn't find subtitles for \(locale)")
+                    }
+                }
+                
                 Log.i(relM, "TODO: Move to \(newMediaURL.asPath)")
                 Log.i(relM, "TODO: Move subtitles too")
             }

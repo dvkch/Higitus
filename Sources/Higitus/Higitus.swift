@@ -15,6 +15,7 @@ struct Higitus: ParsableCommand {
         subcommands: [
             CommandInit.self,
             CommandFigitus.self
-        ]
+        ],
+        defaultSubcommand: CommandFigitus.self
     )
 }

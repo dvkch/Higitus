@@ -24,6 +24,12 @@ struct Options: ParsableArguments {
     var showsFolderCreation: FolderCreationPolicy!
     
     // MARK: OpenSubtitles
+    @Option(name: .customLong(Item.subtitlesLocales.name.arg), help: "Subtitles locales (\(Item.subtitlesLocales.name.env))")
+    var subtitlesLocales: String!
+    var subtitlesLocalesArray: [String] {
+        subtitlesLocales.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+
     @Option(name: .customLong(Item.opensubtitlesApiKey.name.arg), help: "OpenSubtitles API key (\(Item.opensubtitlesApiKey.name.env))")
     var opensubtitlesApiKey: String!
 
@@ -44,6 +50,7 @@ extension Options {
         case moviesPath
         case showsPath
         case showsFolderCreation
+        case subtitlesLocales
         case opensubtitlesApiKey
         case opensubtitlesUsername
         case opensubtitlesPassword
@@ -55,6 +62,7 @@ extension Options {
             case .moviesPath:            ("movies-path", "HIGITUS_MOVIES_PATH")
             case .showsPath:             ("shows-path", "HIGITUS_SHOWS_PATH")
             case .showsFolderCreation:   ("shows-folder-creation", "HIGITUS_SHOWS_FOLDER_CREATION")
+            case .subtitlesLocales:      ("subtitles-locales", "HIGITUS_SUBTITLES_LOCALES")
             case .opensubtitlesApiKey:   ("opensubtitles-api-key", "HIGITUS_OPENSUBTITLES_API_KEY")
             case .opensubtitlesUsername: ("opensubtitles-username", "HIGITUS_OPENSUBTITLES_USERNAME")
             case .opensubtitlesPassword: ("opensubtitles-password", "HIGITUS_OPENSUBTITLES_PASSWORD")
@@ -85,6 +93,7 @@ extension Options {
             }
             try resolve(\.showsFolderCreation, item: .showsFolderCreation, default: .seasonOnly)
             
+            try resolve(\.subtitlesLocales, item: .subtitlesLocales, default: "en,fr")
             try resolve(\.opensubtitlesApiKey, item: .opensubtitlesApiKey)
             try resolve(\.opensubtitlesUsername, item: .opensubtitlesUsername)
             try resolve(\.opensubtitlesPassword, item: .opensubtitlesPassword)
