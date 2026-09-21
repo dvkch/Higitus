@@ -97,6 +97,7 @@ final class OpenSubtitlesClient {
         var request = URLRequest(url: components.url!)
         request.httpMethod = method
         request.setValue(apiKey, forHTTPHeaderField: "Api-Key")
+        request.setValue("Higitus v1.0", forHTTPHeaderField: "User-Agent") 
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if authenticated, let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
