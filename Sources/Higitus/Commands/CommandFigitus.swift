@@ -19,15 +19,15 @@ struct CommandFigitus: ParsableCommand {
     mutating func run() throws {
         Log.level = options.logLevel
 
-        let lock = Lock(url: Config.lockFileURL)
+        let lock = Lock(url: .lockFile)
         guard lock.acquire() else {
             print("Already running, marked need for a new run once the current one is done")
-            Config.runAgainFlagURL.touch()
+            FileURL.runAgainFlag.touch()
             return
         }
         defer { lock.release() }
 
-        try? FileManager.default.removeItem(atPath: Config.runAgainFlagURL.asPath)
+        try? FileURL.runAgainFlag.delete()
 
         try runOnce(
             downloadsURL: options.path,
@@ -35,7 +35,7 @@ struct CommandFigitus: ParsableCommand {
             showsURL: options.showsPath
         )
 
-        if Config.runAgainFlagURL.exists {
+        if FileURL.runAgainFlag.exists {
             print("Needs another run, starting now!")
             try run()
         }
@@ -44,13 +44,19 @@ struct CommandFigitus: ParsableCommand {
     private func runOnce(downloadsURL: FileURL, moviesURL: FileURL, showsURL: FileURL) throws(AppError) {
         print("Organizing: \(downloadsURL.asPath)")
 
+        // SETUP
         let opensubtitles = OpenSubtitlesClient(
             apiKey: options.opensubtitlesApiKey,
             username: options.opensubtitlesUsername,
             password: options.opensubtitlesPassword
         )
-        try opensubtitles.login()
-        
+        do {
+            try opensubtitles.login()
+        } catch {
+            Log.w("OpenSubtitles", "Login failed, continuing without an account (lower quota): \(error.localizedDescription)")
+        }
+
+        // MAIN LOOP
         let medias = try FileManager.default.mediaFiles(under: downloadsURL)
         for m in medias {
             let relM = m.mediaURL.asPath(relativeTo: downloadsURL)

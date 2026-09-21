@@ -40,7 +40,7 @@ extension Media {
         
         for file in try FileManager.default.children(at: parent, ignoringUnderscores: false) {
             guard file.asURL.pathExtension.lowercased() == "srt" else { continue }
-            guard file.asPath.hasPrefix(mediaURLWithoutExtension) else { continue }
+            guard file.asPath.lowercased().hasPrefix(mediaURLWithoutExtension.lowercased()) else { continue }
             
             let subtitleName = file.asPath.replacingOccurrences(of: mediaURLWithoutExtension + ".", with: "", options: .caseInsensitive).lowercased()
             var language = subtitleName.split(separator: ".").first ?? "en"

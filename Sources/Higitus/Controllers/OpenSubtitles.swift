@@ -51,9 +51,11 @@ final class OpenSubtitlesClient {
         var query: [String: String] = ["languages": language]
         switch hunch.type {
         case .movie:
+            query["type"] = "movie"
             query["query"] = hunch.title
             query["year"] = hunch.year.map(String.init)
         case .episode:
+            query["type"] = "episode"
             query["query"] = hunch.title
             query["season_number"] = hunch.season.map(String.init)
             query["episode_number"] = hunch.episode?.values.first.map(String.init)
@@ -68,16 +70,14 @@ final class OpenSubtitlesClient {
         let download: OpenSubtitlesDownloadResponse = try requestCodable(
             "download", method: "POST", body: ["file_id": file.fileId], authenticated: true
         )
-        guard let subtitleData = try? Data(contentsOf: URL(string: download.link)!) else {
+        guard let link = URL(string: download.link) else {
+            throw .openSubtitlesRequestFailed("Malformed download link: \(download.link)")
+        }
+        guard let subtitleData = try? Data(contentsOf: link) else {
             throw .openSubtitlesRequestFailed("Couldn't download subtitle file")
         }
-
-        do {
-            try subtitleData.write(to: destination.asURL)
-        }
-        catch {
-            throw .openSubtitlesRequestFailed("Couldn't save subtitle file")
-        }
+        do { try subtitleData.write(to: destination.asURL) }
+        catch { throw .openSubtitlesRequestFailed("Couldn't save subtitle file") }
     }
 
     // MARK: Generic

@@ -33,6 +33,11 @@ struct FileURL {
     var asMedia: Media? { try? Media(self) }
 }
 
+extension FileURL {
+    static let lockFile = FileURL(path: "/var/tmp/organize_lock")
+    static let runAgainFlag = FileURL(path: "/var/tmp/organize_runagain")
+}
+
 extension FileURL: ExpressibleByArgument {
     init?(argument: String) {
         self.init(path: argument)
