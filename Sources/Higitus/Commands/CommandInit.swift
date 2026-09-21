@@ -19,10 +19,6 @@ struct CommandInit: ParsableCommand {
     @Option(help: "Transmission config.json path")
     var transmissionConfigPath: String
 
-    mutating func validate() throws {
-        try options.validate()
-    }
-
     mutating func run() throws {
         Log.level = options.logLevel
         

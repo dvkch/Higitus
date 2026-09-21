@@ -18,4 +18,14 @@ struct Higitus: ParsableCommand {
         ],
         defaultSubcommand: CommandFigitus.self
     )
+    
+    static func main() {
+        DotEnv.load()
+        do {
+            var command = try parseAsRoot()
+            try command.run()
+        } catch {
+            exit(withError: error)
+        }
+    }
 }

@@ -16,10 +16,6 @@ struct CommandFigitus: ParsableCommand {
     
     @OptionGroup var options: Options
     
-    mutating func validate() throws {
-        try options.validate()
-    }
-    
     mutating func run() throws {
         Log.level = options.logLevel
 
