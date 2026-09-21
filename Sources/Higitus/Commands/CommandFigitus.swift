@@ -19,7 +19,7 @@ struct CommandFigitus: ParsableCommand {
     mutating func run() throws {
         Log.level = options.logLevel
 
-        let lock = Lock(url: .lockFile)
+        let lock = ProcessLock(url: .lockFile)
         guard lock.acquire() else {
             print("Already running, marked need for a new run once the current one is done")
             FileURL.runAgainFlag.touch()
