@@ -1,34 +1,43 @@
 #!/bin/bash
-set -euo pipefail
 
-# Usage: ./build.sh -- run
-#
-# Anything after a literal "--" is forwarded to the built binary.
-# Anything before it is reserved for future build-script-only flags.
+set -e
 
-ARGS=()
-FOUND_SEPARATOR=false
-for arg in "$@"; do
-  if $FOUND_SEPARATOR; then
-    ARGS+=("$arg")
-  elif [ "$arg" = "--" ]; then
-    FOUND_SEPARATOR=true
-  fi
-done
+# cleanup
+rm -rf .build/ build/
 
-# Pull the executable's name straight from Package.swift rather than
-# hardcoding it, so this doesn't silently go stale after a rename.
-EXECUTABLE=higitus
+# build for macOS
+echo ""
+echo "----------------------------------------"
+echo "Building for macOS..."
+swift build --arch arm64 --arch x86_64 -c release
+mkdir -p "build/macOS"
+rsync -ar ".build/apple/Products/Release/higitus" "build/macOS"
+tar -C build/macOS -czf build/macOS.tar.gz .
 
-echo "Building $EXECUTABLE (debug)..."
-swift build
-
-BIN_PATH="$(swift build --show-bin-path)/$EXECUTABLE"
-
-if [ ! -x "$BIN_PATH" ]; then
-  echo "Built binary not found at: $BIN_PATH" >&2
-  exit 1
+# build for linux
+if ! command -v docker &> /dev/null; then
+    echo "Couldn't build for linux, docker isn't available"
+    exit -1
 fi
 
-echo "Running: $BIN_PATH ${ARGS[*]}"
-"$BIN_PATH" "${ARGS[@]}"
+BUILD_CMD="swift build -c release -Xswiftc -O -Xswiftc -static-stdlib"
+
+echo ""
+echo "----------------------------------------"
+echo "Building for Linux ARM64..."
+docker container rm -f higitus-linux > /dev/null
+docker run -it --name higitus-linux --platform linux/arm64/v8 -v $(pwd):/higitus swift:latest /bin/bash -c "cd higitus && $BUILD_CMD"
+mkdir -p "build/linux-arm64"
+rsync -ar ".build/aarch64-unknown-linux-gnu/release/higitus" "build/linux-arm64"
+tar -C build/linux-arm64 -czf build/linux-arm64.tar.gz .
+
+echo ""
+echo "----------------------------------------"
+echo "Building for Linux x64..."
+docker container rm -f higitus-linux > /dev/null
+docker run -it --name higitus-linux --platform linux/amd64    -v $(pwd):/higitus swift:latest /bin/bash -c "cd higitus && $BUILD_CMD"
+mkdir -p "build/linux-amd64"
+rsync -ar ".build/x86_64-unknown-linux-gnu/release/higitus" "build/linux-amd64"
+tar -C build/linux-amd64 -czf build/linux-amd64.tar.gz .
+
+echo "All good!"
