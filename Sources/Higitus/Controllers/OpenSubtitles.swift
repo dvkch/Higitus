@@ -111,8 +111,8 @@ final class OpenSubtitlesClient {
         }
 
         // Run request synchronously
-        var resultData: Data?
-        var resultError: Error?
+        nonisolated(unsafe) var resultData: Data?
+        nonisolated(unsafe) var resultError: Error?
         let semaphore = DispatchSemaphore(value: 0)
 
         URLSession.shared.dataTask(with: request) { data, _, error in

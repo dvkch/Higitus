@@ -8,6 +8,15 @@
 import Foundation
 import ArgumentParser
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#endif
+
+
 struct FileURL {
     private let url: URL
     
@@ -69,7 +78,7 @@ extension FileURL {
 
     func touch(contents: String? = nil) {
         if !FileManager.default.fileExists(atPath: asPath) {
-            FileManager.default.createFile(atPath: asPath, contents: contents?.data(using: .utf8))
+            _ = FileManager.default.createFile(atPath: asPath, contents: contents?.data(using: .utf8))
         }
     }
     
@@ -95,7 +104,7 @@ extension FileURL {
         let patternParts = pattern.split(separator: "/").map(String.init)
         guard asURL.pathComponents.count >= patternParts.count else { return false }
         return zip(asURL.pathComponents.suffix(patternParts.count), patternParts)
-                .allSatisfy { NSPredicate(format: "self LIKE %@", $1).evaluate(with: $0) }
+                .allSatisfy { fnmatch($1, $0, 0) == 0 }
     }
     
     var isCleanupable: Bool {
