@@ -32,7 +32,7 @@ extension Media {
 }
 
 extension Media {
-    func findSubtitles() throws -> [String: FileURL] {
+    func findSubtitles() throws(AppError) -> [String: FileURL] {
         guard let parent = mediaURL.parent else { return [:] }
         let mediaURLWithoutExtension = mediaURL.asURL.deletingPathExtension().path(percentEncoded: false)
         
@@ -49,5 +49,17 @@ extension Media {
         }
         
         return subtitles
+    }
+}
+
+extension Media {
+    func move(to suggestedURL: FileURL, folderCreation: FolderCreationPolicy) throws(AppError) {
+        let adaptedURL = try suggestedURL.adapted(folderCreation: folderCreation)
+        try mediaURL.move(to: adaptedURL)
+
+        for (language, subtitleURL) in try findSubtitles() {
+            let newSubtitleURL = adaptedURL.replacingExtension(with: "\(language).srt")
+            try subtitleURL.move(to: newSubtitleURL)
+        }
     }
 }

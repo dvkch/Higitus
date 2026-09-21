@@ -70,6 +70,15 @@ extension FileURL {
         }
     }
     
+    func move(to newURL: FileURL) throws(AppError) {
+        do {
+            try FileManager.default.moveItem(at: asURL, to: newURL.asURL)
+        }
+        catch {
+            throw .fileError(self, error)
+        }
+    }
+    
     func delete() throws(AppError) {
         do {
             try FileManager.default.removeItem(at: asURL)
@@ -185,5 +194,49 @@ extension FileURL {
         default:
             throw .couldntGeneratePath(self, hunch)
         }
+    }
+}
+
+extension FileURL {
+    func adapted(folderCreation: FolderCreationPolicy) throws(AppError) -> FileURL {
+        let folders = asURL.deletingLastPathComponent().pathComponents.dropFirst()
+
+        var current = FileURL(path: "/")
+        for (index, folder) in folders.enumerated() {
+            let siblings = try FileManager.default.children(at: current, ignoringUnderscores: false)
+            if let existing = siblings.first(where: { Self.fuzzyMatches($0.asURL.lastPathComponent, folder) }) {
+                current = existing
+                continue
+            }
+
+            let canCreate: Bool
+            switch folderCreation {
+            case .always:
+                canCreate = true
+                
+            case .seasonOnly:
+                let isLastFolder = index == folders.count - 1
+                canCreate = (isLastFolder && folder.lowercased().hasPrefix("season"))
+            }
+
+            current = FileURL(url: current.asURL.appendingPathComponent(folder, isDirectory: true))
+
+            guard canCreate else {
+                throw .directoryMissing(current)
+            }
+
+            do { try FileManager.default.createDirectory(at: current.asURL, withIntermediateDirectories: false) }
+            catch { throw .fileError(current, error) }
+        }
+
+        return FileURL(url: current.asURL.appendingPathComponent(asURL.lastPathComponent, isDirectory: false))
+    }
+
+    private static func fuzzyMatches(_ existing: String, _ candidate: String) -> Bool {
+        if existing == candidate || existing.lowercased() == candidate.lowercased() { return true }
+        let noQuotes: (String) -> String = { $0.replacingOccurrences(of: "'", with: "") }
+        if noQuotes(existing) == noQuotes(candidate) { return true }
+        let noDots: (String) -> String = { $0.replacingOccurrences(of: ".", with: "") }
+        return noDots(existing) == noDots(candidate)
     }
 }

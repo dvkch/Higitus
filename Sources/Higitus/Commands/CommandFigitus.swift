@@ -56,6 +56,8 @@ struct CommandFigitus: ParsableCommand {
             let relM = m.mediaURL.asPath(relativeTo: downloadsURL)
             do {
                 print("---------------")
+
+                // ANALYSE
                 Log.i(relM, "Analyzing")
 
                 let hunch = try Hunch.analyze(m.mediaURL, inside: downloadsURL)
@@ -63,13 +65,13 @@ struct CommandFigitus: ParsableCommand {
                 let existingSubtitles = try m.findSubtitles()
                 Log.i(relM, "Found subtitles: \(existingSubtitles.keys.joined(separator: ", "))")
 
+                // DOWNLOAD SUBTITLES
                 let subtitlesToDownload = Set(options.subtitlesLocalesArray).subtracting(existingSubtitles.keys)
                 if subtitlesToDownload.isNotEmpty {
                     for locale in subtitlesToDownload {
                         do {
-                            let file = try opensubtitles.search(
-                                hunch: hunch, hash: try? m.mediaURL.openSubtitlesHash(), language: locale
-                            )
+                            let hash = try? m.mediaURL.openSubtitlesHash()
+                            let file = try opensubtitles.search(hunch: hunch, hash: hash, language: locale)
                             guard let file else {
                                 Log.w(relM, "No available subtitles for \(locale)")
                                 continue
@@ -86,8 +88,9 @@ struct CommandFigitus: ParsableCommand {
                     Log.i(relM, "All subtitles already present")
                 }
                 
-                Log.i(relM, "TODO: Move to \(newMediaURL.asPath)")
-                Log.i(relM, "TODO: Move subtitles too")
+                // MOVE FILES
+                try m.move(to: newMediaURL, folderCreation: options.showsFolderCreation)
+                Log.i(relM, "Media and subtitles moved to \(newMediaURL.asPath)")
             }
             catch {
                 Log.e(relM, "Error: \(error.localizedDescription)")

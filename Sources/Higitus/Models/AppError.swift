@@ -19,6 +19,7 @@ enum AppError {
     case notSerializable(Any)
     case fileError(FileURL, Error)
     case wrongArgument(name: String, message: String)
+    case directoryMissing(FileURL)
 }
 
 extension AppError: LocalizedError {
@@ -45,6 +46,8 @@ extension AppError: LocalizedError {
         case .fileError(let url, let error): "Error encountered during file operation at \(url.asPath): \(error.localizedDescription)"
             
         case .wrongArgument(let name, let message): "Option '\(name)' is not valid: \(message)"
+            
+        case .directoryMissing(let url): "Directory doesnt exist at \(url.asPath)"
         }
     }
 }
