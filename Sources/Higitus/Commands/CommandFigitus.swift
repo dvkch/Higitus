@@ -64,21 +64,26 @@ struct CommandFigitus: ParsableCommand {
                 Log.i(relM, "Found subtitles: \(existingSubtitles.keys.joined(separator: ", "))")
 
                 let subtitlesToDownload = Set(options.subtitlesLocalesArray).subtracting(existingSubtitles.keys)
-                Log.i(relM, "Will download subtitles: \(subtitlesToDownload.joined(separator: ", "))")
-                for locale in subtitlesToDownload {
-                    do {
-                        let file = try opensubtitles.search(
-                            hunch: hunch, hash: try? m.mediaURL.openSubtitlesHash(), language: locale
-                        )
-                        guard let file else {
-                            Log.w(relM, "No available subtitles for \(locale)")
-                            continue
+                if subtitlesToDownload.isNotEmpty {
+                    for locale in subtitlesToDownload {
+                        do {
+                            let file = try opensubtitles.search(
+                                hunch: hunch, hash: try? m.mediaURL.openSubtitlesHash(), language: locale
+                            )
+                            guard let file else {
+                                Log.w(relM, "No available subtitles for \(locale)")
+                                continue
+                            }
+                            try opensubtitles.download(file, to: m.mediaURL.replacingExtension(with: "\(locale).srt"))
+                            Log.i(relM, "Downloaded subtitle '\(locale)'")
                         }
-                        try opensubtitles.download(file, to: m.mediaURL.replacingExtension(with: "\(locale).srt"))
+                        catch {
+                            Log.e(relM, "Couldn't find subtitles for \(locale)")
+                        }
                     }
-                    catch {
-                        Log.e(relM, "Couldn't find subtitles for \(locale)")
-                    }
+                }
+                else {
+                    Log.i(relM, "All subtitles already present")
                 }
                 
                 Log.i(relM, "TODO: Move to \(newMediaURL.asPath)")

@@ -140,7 +140,14 @@ final class OpenSubtitlesClient {
             return try decoder.decode(T.self, from: data)
         }
         catch {
-            throw .openSubtitlesRequestFailed("Malformed JSON response: \(error.localizedDescription)")
+            if let jsonError = try? decoder.decode(OpenSubtitlesErrorResponse.self, from: data) {
+                throw .openSubtitlesRequestFailed(jsonError.message)
+            }
+            else {
+                Log.d("OpenSubtitles", String(data: data, encoding: .utf8)!)
+                Log.d("OpenSubtitles", "\(error)")
+                throw .openSubtitlesRequestFailed("Malformed JSON response: \(error.localizedDescription)")
+            }
         }
     }
 }
