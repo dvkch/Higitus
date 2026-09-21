@@ -12,7 +12,7 @@ struct Higitus: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "higitus",
         abstract: "Organizes your download folder.",
-        version: "1.0",
+        version: "1.0.1",
         subcommands: [
             CommandInit.self,
             CommandFigitus.self
