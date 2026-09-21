@@ -21,7 +21,8 @@ struct Higitus: ParsableCommand {
     )
     
     static func main() {
-        DotEnv.load()
+        DotEnv.load(path: ".env")
+        DotEnv.load(path: "higitus.env")
         do {
             var command = try parseAsRoot()
             try command.run()

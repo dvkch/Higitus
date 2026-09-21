@@ -8,7 +8,7 @@
 import Foundation
 
 enum DotEnv {
-    static func load(path: String = ".env") {
+    static func load(path: String) {
         guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else { return }
 
         for line in contents.split(separator: "\n") {
