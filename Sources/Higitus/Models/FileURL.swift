@@ -21,13 +21,11 @@ struct FileURL {
     
     var asURL: URL { url }
     var asPath: String { url.path(percentEncoded: false) }
-    func asPath(relativeTo: FileURL) -> String {
-        var p = asPath
-        if p.hasPrefix(relativeTo.asPath) {
-            // TODO: do better than this
-            p = p.replacingOccurrences(of: relativeTo.asPath, with: "")
-        }
-        return p
+    func asPath(relativeTo root: FileURL) -> String {
+        let rootComponents = root.asURL.pathComponents
+        let ourComponents = asURL.pathComponents
+        guard ourComponents.starts(with: rootComponents) else { return asPath }
+        return ourComponents.dropFirst(rootComponents.count).joined(separator: "/")
     }
     var asNSURL: NSURL { url as NSURL }
     var asMedia: Media? { try? Media(self) }
