@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ArgumentParser
 
 struct FileURL {
     private let url: URL
@@ -30,6 +31,12 @@ struct FileURL {
     }
     var asNSURL: NSURL { url as NSURL }
     var asMedia: Media? { try? Media(self) }
+}
+
+extension FileURL: ExpressibleByArgument {
+    init?(argument: String) {
+        self.init(path: argument)
+    }
 }
 
 extension FileURL: Hashable, Equatable, Comparable {

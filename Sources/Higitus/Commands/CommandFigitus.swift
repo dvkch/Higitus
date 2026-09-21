@@ -14,27 +14,14 @@ struct CommandFigitus: ParsableCommand {
         abstract: "Organizes the given folder"
     )
     
-    @Option(help: "Movies folder")
-    var moviesFolder: String
+    @OptionGroup var options: Options
     
-    @Option(help: "Shows folder")
-    var showsFolder: String
-
-    @Argument(help: "Folder to organize")
-    var path: String
-    
-    @Option(help: "Log verbosity level.")
-    var logLevel: Log.Level = .info
+    mutating func validate() throws {
+        try options.validate()
+    }
     
     mutating func run() throws {
-        Log.level = logLevel
-
-        let moviesURL = FileURL(path: moviesFolder)
-        let showsURL = FileURL(path: showsFolder)
-        let downloadsURL = FileURL(path: path)
-        guard moviesURL.exists else { fatalError("Movies folder not found at \(moviesURL.asPath)") }
-        guard showsURL.exists else { fatalError("Shows folder not found at \(showsURL.asPath)") }
-        guard downloadsURL.exists else { fatalError("Downloads folder not found at \(downloadsURL.asPath)") }
+        Log.level = options.logLevel
 
         let lock = Lock(url: Config.lockFileURL)
         guard lock.acquire() else {
@@ -46,7 +33,11 @@ struct CommandFigitus: ParsableCommand {
 
         try? FileManager.default.removeItem(atPath: Config.runAgainFlagURL.asPath)
 
-        try runOnce(downloadsURL: downloadsURL, moviesURL: moviesURL, showsURL: showsURL)
+        try runOnce(
+            downloadsURL: options.path,
+            moviesURL: options.moviesPath,
+            showsURL: options.showsPath
+        )
 
         if Config.runAgainFlagURL.exists {
             print("Needs another run, starting now!")
@@ -55,7 +46,6 @@ struct CommandFigitus: ParsableCommand {
     }
     
     private func runOnce(downloadsURL: FileURL, moviesURL: FileURL, showsURL: FileURL) throws(AppError) {
-
         print("Organizing: \(downloadsURL.asPath)")
         
         let medias = try FileManager.default.mediaFiles(under: downloadsURL)

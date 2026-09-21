@@ -14,18 +14,21 @@ struct CommandInit: ParsableCommand {
         abstract: "Sets this script as a post-download hook"
     )
     
+    @OptionGroup var options: Options
+
     @Option(help: "Transmission config.json path")
     var transmissionConfigPath: String
 
-    @Option(help: "Log verbosity level.")
-    var logLevel: Log.Level = .info
-    
+    mutating func validate() throws {
+        try options.validate()
+    }
+
     mutating func run() throws {
-        Log.level = logLevel
+        Log.level = options.logLevel
         
         let transmission = Transmission(configURL: FileURL(path: transmissionConfigPath))
         let selfPath = FileURL.higitusURL.asPath
-        // TODO: add params too, right ?
+        // we expect the params to be available via env vars here, or the hook won't be able to run.
         try transmission.setPostDownloadHook(to: selfPath)
 
         print("\(transmissionConfigPath) has been updated to run \(selfPath)")

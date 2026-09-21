@@ -18,6 +18,7 @@ enum AppError {
     case notAMediaFile(FileURL)
     case notSerializable(Any)
     case fileError(FileURL, Error)
+    case wrongArgument(name: String, message: String)
 }
 
 extension AppError: LocalizedError {
@@ -42,6 +43,8 @@ extension AppError: LocalizedError {
         case .notSerializable(let data): "Data is not serializable: \(data)"
             
         case .fileError(let url, let error): "Error encountered during file operation at \(url.asPath): \(error.localizedDescription)"
+            
+        case .wrongArgument(let name, let message): "Option '\(name)' is not valid: \(message)"
         }
     }
 }
