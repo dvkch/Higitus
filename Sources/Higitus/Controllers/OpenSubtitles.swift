@@ -33,11 +33,11 @@ final class OpenSubtitlesClient {
         self.token = response.token
     }
 
-    func search(hunch: HunchResult, hash: String, language: String) throws(AppError) -> OpenSubtitlesFile? {
+    func search(hunch: HunchResult, hash: String?, language: String) throws(AppError) -> OpenSubtitlesFile? {
         var query: [String: String] = [
-            "languages": language,
-            "moviehash": hash
+            "languages": language
         ]
+        query["moviehash"] = hash
 
         switch hunch.type {
         case .movie:

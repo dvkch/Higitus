@@ -68,7 +68,7 @@ struct CommandFigitus: ParsableCommand {
                 for locale in subtitlesToDownload {
                     do {
                         let file = try opensubtitles.search(
-                            hunch: hunch, hash: m.mediaURL.openSubtitlesHash(), language: locale
+                            hunch: hunch, hash: try? m.mediaURL.openSubtitlesHash(), language: locale
                         )
                         guard let file else {
                             Log.w(relM, "No available subtitles for \(locale)")
