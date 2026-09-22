@@ -167,7 +167,7 @@ extension FileURL {
         addChunk(at: 0)
         addChunk(at: UInt64(fileSize) - chunkSize)
 
-        return String(format: "%016qx", hash)
+        return String(hash, radix: 16).leftPadded(to: 16, with: "0")
     }
 }
 

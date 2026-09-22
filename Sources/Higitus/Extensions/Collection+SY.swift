@@ -19,3 +19,10 @@ extension Collection {
         return !isEmpty
     }
 }
+
+extension RangeReplaceableCollection {
+    func leftPadded(to length: Int, with padding: Element) -> Self {
+        guard count < length else { return self }
+        return Self(repeating: padding, count: length - count) + self
+    }
+}
