@@ -73,23 +73,27 @@ final class OpenSubtitlesClient {
         guard let link = URL(string: download.link) else {
             throw .openSubtitlesRequestFailed("Malformed download link: \(download.link)")
         }
-        guard let subtitleData = try? Data(contentsOf: link) else {
-            throw .openSubtitlesRequestFailed("Couldn't download subtitle file")
+
+        let subtitleData = try request(link)
+
+        do {
+            try subtitleData.write(to: destination.asURL)
         }
-        do { try subtitleData.write(to: destination.asURL) }
-        catch { throw .openSubtitlesRequestFailed("Couldn't save subtitle file") }
+        catch {
+            throw .openSubtitlesRequestFailed("Couldn't save subtitle file")
+        }
     }
 
     // MARK: Generic
     private func request(
-        _ path: String,
+        _ url: URL,
         method: String = "GET",
         query: [String: String] = [:],
         body: [String: Any]? = nil,
         authenticated: Bool = false
     ) throws(AppError) -> Data {
         // Build request
-        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         if query.isNotEmpty {
             components.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) }
         }
@@ -144,7 +148,7 @@ final class OpenSubtitlesClient {
             throw .openSubtitlesRequestFailed(resultError.localizedDescription)
         }
         guard let resultData else {
-            throw .openSubtitlesRequestFailed(path)
+            throw .openSubtitlesRequestFailed(url.absoluteString)
         }
         return resultData
     }
@@ -156,7 +160,10 @@ final class OpenSubtitlesClient {
         body: [String: Any]? = nil,
         authenticated: Bool = false
     ) throws(AppError) -> T {
-        let data = try request(path, method: method, query: query, body: body, authenticated: authenticated)
+        let data = try request(
+            baseURL.appendingPathComponent(path),
+            method: method, query: query, body: body, authenticated: authenticated
+        )
         
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
