@@ -35,7 +35,7 @@ struct Hunch {
             return try decoder.decode(HunchResult.self, from: data)
         }
         catch {
-            throw .hunchError("Couldnt decode hunch result for \(url.asPath): \(error)")
+            throw .hunchError("Couldnt decode hunch result for \(url.asPath): \(error.localizedDescription)")
         }
     }
 }

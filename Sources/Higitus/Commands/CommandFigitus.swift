@@ -67,7 +67,6 @@ struct CommandFigitus: ParsableCommand {
                 Log.i(relM, "Analyzing")
 
                 let hunch = try Hunch.analyze(m.mediaURL, inside: downloadsURL)
-                let newMediaURL = try m.mediaURL.suggestURL(using: hunch, moviesRoot: moviesURL, seriesRoot: showsURL)
                 let existingSubtitles = try m.findSubtitles()
                 Log.i(relM, "Found subtitles: \(existingSubtitles.keys.joined(separator: ", "))")
 
@@ -76,7 +75,15 @@ struct CommandFigitus: ParsableCommand {
                 if subtitlesToDownload.isNotEmpty {
                     for locale in subtitlesToDownload {
                         do {
-                            let hash = try? m.mediaURL.openSubtitlesHash()
+                            var hash: String?
+                            do {
+                                hash = try m.mediaURL.openSubtitlesHash()
+                                Log.d(relM, "Hash computed to \(hash ?? "")")
+                            }
+                            catch {
+                                Log.w(relM, "Cannot compute hash: \(error.localizedDescription)")
+                            }
+
                             let file = try opensubtitles.search(hunch: hunch, hash: hash, language: locale)
                             guard let file else {
                                 Log.w(relM, "No available subtitles for \(locale)")
@@ -86,7 +93,7 @@ struct CommandFigitus: ParsableCommand {
                             Log.i(relM, "Downloaded subtitle '\(locale)'")
                         }
                         catch {
-                            Log.e(relM, "Couldn't find subtitles for \(locale)")
+                            Log.e(relM, "Couldn't find subtitles for \(locale): \(error.localizedDescription)")
                         }
                     }
                 }
@@ -95,6 +102,9 @@ struct CommandFigitus: ParsableCommand {
                 }
                 
                 // MOVE FILES
+                let newMediaURL = try m.mediaURL.suggestURL(
+                    using: hunch, moviesRoot: moviesURL, seriesRoot: showsURL
+                )
                 try m.move(to: newMediaURL, folderCreation: options.showsFolderCreation)
                 Log.i(relM, "Media and subtitles moved to \(newMediaURL.asPath)")
             }

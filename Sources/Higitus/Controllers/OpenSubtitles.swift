@@ -110,6 +110,22 @@ final class OpenSubtitlesClient {
                 throw .notSerializable(body)
             }
         }
+        
+        // LOGGING
+        Log.d("OpenSubtitles", "------------------------")
+        Log.d("OpenSubtitles", "\(method) \(components.url!)")
+        if let headers = request.allHTTPHeaderFields {
+            Log.d("OpenSubtitles", "Headers:")
+            headers.forEach { k, v in
+                let value = ["Api-Key", "Authorization"].contains(k) ? "XXXXX" : v
+                Log.d("OpenSubtitles", " - \(k): \(value)")
+            }
+        }
+        if let bodyData = request.httpBody, let body = String(data: bodyData, encoding: .utf8) {
+            Log.d("OpenSubtitles", "Body:")
+            Log.d("OpenSubtitles", body)
+        }
+        Log.d("OpenSubtitles", "------------------------")
 
         // Run request synchronously
         nonisolated(unsafe) var resultData: Data?
@@ -149,7 +165,7 @@ final class OpenSubtitlesClient {
         }
         catch {
             if let jsonError = try? decoder.decode(OpenSubtitlesErrorResponse.self, from: data) {
-                throw .openSubtitlesRequestFailed(jsonError.message)
+                throw .openSubtitlesRequestFailed(jsonError.description)
             }
             else {
                 Log.d("OpenSubtitles", String(data: data, encoding: .utf8)!)
