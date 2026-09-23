@@ -26,8 +26,10 @@ struct Options: ParsableArguments {
     // MARK: OpenSubtitles
     @Option(name: .customLong(Item.subtitlesLocales.name.arg), help: "Subtitles locales (\(Item.subtitlesLocales.name.env))")
     var subtitlesLocales: String!
-    var subtitlesLocalesArray: [String] {
-        subtitlesLocales.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+    var subtitlesLocalesArray: [Lang] {
+        subtitlesLocales.split(separator: ",")
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .compactMap { Lang(rawValue: $0) }
     }
 
     @Option(name: .customLong(Item.opensubtitlesApiKey.name.arg), help: "OpenSubtitles API key (\(Item.opensubtitlesApiKey.name.env))")

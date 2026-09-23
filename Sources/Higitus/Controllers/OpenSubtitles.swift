@@ -33,22 +33,22 @@ final class OpenSubtitlesClient {
         self.token = response.token
     }
 
-    func search(hunch: HunchResult, hash: String?, language: String) throws(AppError) -> OpenSubtitlesFile? {
+    func search(hunch: HunchResult, hash: String?, language: Lang) throws(AppError) -> OpenSubtitlesFile? {
         if let hash, let file = try searchByHash(hash, language: language) {
             return file
         }
         return try searchByMetadata(hunch, language: language)
     }
 
-    private func searchByHash(_ hash: String, language: String) throws(AppError) -> OpenSubtitlesFile? {
+    private func searchByHash(_ hash: String, language: Lang) throws(AppError) -> OpenSubtitlesFile? {
         let response: OpenSubtitlesSearchResponse = try requestCodable(
-            "subtitles", query: ["languages": language, "moviehash": hash]
+            "subtitles", query: ["languages": language.rawValue, "moviehash": hash]
         )
         return response.data.first?.attributes.files.first
     }
 
-    private func searchByMetadata(_ hunch: HunchResult, language: String) throws(AppError) -> OpenSubtitlesFile? {
-        var query: [String: String] = ["languages": language]
+    private func searchByMetadata(_ hunch: HunchResult, language: Lang) throws(AppError) -> OpenSubtitlesFile? {
+        var query: [String: String] = ["languages": language.rawValue]
         switch hunch.type {
         case .movie:
             query["type"] = "movie"

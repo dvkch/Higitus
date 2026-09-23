@@ -32,11 +32,11 @@ extension Media {
 }
 
 extension Media {
-    func findSubtitles() throws(AppError) -> [String: FileURL] {
+    func findSubtitles() throws(AppError) -> [Lang: FileURL] {
         guard let parent = mediaURL.parent else { return [:] }
         let mediaURLWithoutExtension = mediaURL.asURL.deletingPathExtension().path(percentEncoded: false)
         
-        var subtitles = [String: FileURL]()
+        var subtitles = [Lang: FileURL]()
         
         for file in try FileManager.default.children(at: parent, ignoringUnderscores: false) {
             guard file.asURL.pathExtension.lowercased() == "srt" else { continue }
@@ -45,7 +45,13 @@ extension Media {
             let subtitleName = file.asPath.replacingOccurrences(of: mediaURLWithoutExtension + ".", with: "", options: .caseInsensitive).lowercased()
             var language = subtitleName.split(separator: ".").first ?? "en"
             if language == "srt" { language = "en" }
-            subtitles[String(language)] = file
+            
+            guard let lang = Lang(rawValue: String(language)) else {
+                Log.w("Media", "Unknown language code: \(language), skipping subtitle file")
+                continue
+            }
+            
+            subtitles[lang] = file
         }
         
         return subtitles

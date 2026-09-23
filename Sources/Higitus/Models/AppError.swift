@@ -20,6 +20,7 @@ enum AppError {
     case fileError(FileURL, Error)
     case wrongArgument(name: String, message: String)
     case directoryMissing(FileURL)
+    case ffprobeFailed(String)
 }
 
 extension AppError: LocalizedError {
@@ -48,6 +49,8 @@ extension AppError: LocalizedError {
         case .wrongArgument(let name, let message): "Option '\(name)' is not valid: \(message)"
             
         case .directoryMissing(let url): "Directory doesnt exist at \(url.asPath)"
+            
+        case .ffprobeFailed(let message): "FFProbe failed: \(message)"
         }
     }
 }
