@@ -15,57 +15,65 @@ struct MediaSubtitle {
 
 extension MediaSubtitle {
     init?(url: FileURL, for media: Media) {
-        guard MediaSubtitle.supportedExtensions.contains(url.asURL.pathExtension.lowercased()) else {
+        guard Self.supportedExtensions.contains(url.asURL.pathExtension.lowercased()) else {
+            return nil
+        }
+        guard let tags = Self.tags(of: url, for: media.mediaURL) else {
             return nil
         }
 
-        // Format: "MovieName.lang.ext"
-        let mediaURLWithoutExtension = media.mediaURL.replacingExtension(with: nil).asPath
-        if url.asPath.lowercased().hasPrefix(mediaURLWithoutExtension.lowercased()) {
-            let subtitleName = url.asPath.replacingOccurrences(
-                of: mediaURLWithoutExtension + ".", with: "", options: .caseInsensitive
-            ).lowercased()
+        let tokens = tags
+            .split(whereSeparator: { ". _-".contains($0) })
+            .map { $0.lowercased() }
+        let flags = Set(tokens).intersection(Self.hiFlags)
+        let candidates = tokens.filter { !Self.hiFlags.contains($0) }
 
-            var language = subtitleName.split(separator: ".").first ?? "en"
-            if language == "srt" { language = "en" }
-            
-            guard let lang = Lang(rawValue: String(language)) else {
-                Log.w("Subtitle", "Unknown language code: \(language), skipping subtitle file")
-                return nil
-            }
-
-            self.url = url
+        if let lang = candidates.lazy.compactMap({ Lang(rawValue: $0) }).first {
             self.lang = lang
-            self.isHI = false
-            return
+            self.isHI = !flags.isEmpty
         }
-        
-        // Format: "Subs/Language.ext" or "Subs/SDH.lang.HI.ext"
-        let pathRelativeToMediaParent = url.asPath(relativeTo: FileURL(url: media.mediaURL.asURL.deletingLastPathComponent()))
-        if pathRelativeToMediaParent.lowercased().hasPrefix("subs/") {
-            var subtitleNameParts = url.asURL.deletingPathExtension().lastPathComponent.split(separator: ".")
-            if subtitleNameParts.count > 1 && subtitleNameParts.last == "HI" {
-                self.isHI = true
-                subtitleNameParts.removeLast()
-            }
-            else {
-                self.isHI = false
-            }
-            guard let langBestGuess = subtitleNameParts.reversed().compactMap({ Lang(rawValue: String($0)) }).first else {
-                Log.w("Subtitle", "Couldn't identify language for \(pathRelativeToMediaParent), skipping subtitle file")
-                return nil
-            }
-            self.url = url
-            self.lang = langBestGuess
-            return
+        else if flags == ["hi"], candidates.isEmpty, let hindi = Lang(rawValue: "hi") {
+            // "Movie.hi.srt": a lone "hi" is Hindi, not hearing impaired
+            self.lang = hindi
+            self.isHI = false
+        }
+        else if candidates.isEmpty, let english = Lang(rawValue: "en") {
+            // "Movie.srt" or "Movie.sdh.srt": no language given
+            self.lang = english
+            self.isHI = !flags.isEmpty
+        }
+        else {
+            Log.w("Subtitle", "Couldn't identify language for \(url.asURL.lastPathComponent), skipping subtitle file")
+            return nil
+        }
+        self.url = url
+    }
+
+    // The descriptive part of the subtitle's name, or nil if it doesn't belong to this media.
+    private static func tags(of sub: FileURL, for media: FileURL) -> String? {
+        let mediaStem = media.asURL.deletingPathExtension().lastPathComponent.lowercased()
+        let mediaDir  = media.asURL.deletingLastPathComponent().standardizedFileURL.path.lowercased()
+        let subStem   = sub.asURL.deletingPathExtension().lastPathComponent
+        let subDir    = sub.asURL.deletingLastPathComponent().standardizedFileURL.path.lowercased()
+
+        // "Movie.srt", "Movie.en.srt", "Movie.en.sdh.srt"
+        if subDir == mediaDir {
+            let lower = subStem.lowercased()
+            if lower == mediaStem { return "" }
+            if lower.hasPrefix(mediaStem + ".") { return String(subStem.dropFirst(mediaStem.count + 1)) }
+            return nil
         }
 
+        // "Subs/English.srt", "Subs/2_English.srt", "Subs/Episode/3_French.srt"
+        let subsDir = mediaDir + "/subs"
+        if subDir == subsDir || subDir == subsDir + "/" + mediaStem {
+            return subStem
+        }
         return nil
     }
 }
 
 extension MediaSubtitle {
-    static var supportedExtensions: [String] {
-        ["srt"]
-    }
+    static let supportedExtensions: Set<String> = ["srt"]
+    private static let hiFlags: Set<String> = ["hi", "sdh", "cc"]
 }
