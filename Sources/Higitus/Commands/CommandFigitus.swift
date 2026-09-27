@@ -68,13 +68,13 @@ struct CommandFigitus: ParsableCommand {
 
                 let hunch = try Hunch.analyze(m.mediaURL, inside: downloadsURL)
                 let subtitleFiles = try m.findSubtitles()
-                Log.i(relM, "Existing subtitle files: \(subtitleFiles.keys.map(\.rawValue).joined(separator: ", "))")
+                Log.i(relM, "Existing subtitle files: \(subtitleFiles.map(\.lang).map(\.rawValue).joined(separator: ", "))")
                 let subtitleTracks = try FFmpeg.embeddedSubtitleLocales(for: m.mediaURL)
                 Log.i(relM, "Existing subtitle tracks: \(subtitleTracks.map(\.rawValue).joined(separator: ", "))")
 
                 // DOWNLOAD SUBTITLES
                 let subtitlesToDownload = Set(options.subtitlesLocalesArray)
-                    .subtracting(subtitleFiles.keys)
+                    .subtracting(subtitleFiles.map(\.lang))
                     .subtracting(subtitleTracks)
 
                 if subtitlesToDownload.isNotEmpty {

@@ -34,27 +34,28 @@ extension Media {
 extension Media {
     func findSubtitles() throws(AppError) -> [MediaSubtitle] {
         guard let parent = mediaURL.parent else { return [] }
-        let mediaURLWithoutExtension = mediaURL.replacingExtension(with: nil).asPath
+        let subsFolder = FileURL(url: parent.asURL.appending(path: "Subs", directoryHint: .isDirectory))
         
         var subtitles = [MediaSubtitle]()
-        
-        for file in try FileManager.default.children(at: parent, ignoringUnderscores: false) {
-            guard MediaSubtitle.supportedExtensions.contains(file.asURL.pathExtension.lowercased()) else { continue }
-            guard file.asPath.lowercased().hasPrefix(mediaURLWithoutExtension.lowercased()) else { continue }
-            
-            let subtitleName = file.asPath.replacingOccurrences(of: mediaURLWithoutExtension + ".", with: "", options: .caseInsensitive).lowercased()
-            var language = subtitleName.split(separator: ".").first ?? "en"
-            if language == "srt" { language = "en" }
-            
-            guard let lang = Lang(rawValue: String(language)) else {
-                Log.w("Media", "Unknown language code: \(language), skipping subtitle file")
-                continue
-            }
-            
-            subtitles.append(MediaSubtitle(path: file, lang: lang))
+        subtitles += try FileManager.default.children(at: parent, ignoringUnderscores: false).compactMap {
+            MediaSubtitle(url: $0, for: self)
+        }
+        subtitles += try FileManager.default.children(at: subsFolder, ignoringUnderscores: false).compactMap {
+            MediaSubtitle(url: $0, for: self)
         }
         
-        return subtitles
+        var groupedSubtitles = subtitles.reduce(into: [:]) { groups, sub in
+            groups[sub.lang, default: []].append(sub)
+        }
+        for lang in groupedSubtitles.keys {
+            groupedSubtitles[lang] = groupedSubtitles[lang]!.sorted(by: { sub1, sub2 in
+                // TODO: allow the user to prefer HI over regular via env var
+                if !sub1.isHI && sub2.isHI { return true }
+                if sub1.isHI && !sub2.isHI { return false }
+                return true
+            })
+        }
+        return groupedSubtitles.values.compactMap { $0.first }
     }
 }
 
@@ -65,7 +66,7 @@ extension Media {
 
         for subtitle in try findSubtitles() {
             let newSubtitleURL = adaptedURL.replacingExtension(with: "\(subtitle.lang).srt")
-            try subtitle.path.move(to: newSubtitleURL)
+            try subtitle.url.move(to: newSubtitleURL)
         }
     }
 }
