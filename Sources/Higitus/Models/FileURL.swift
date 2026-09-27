@@ -148,8 +148,13 @@ extension FileURL {
         return patterns.contains(where: { self.matchesPattern($0, caseSensitive: false) })
     }
     
-    func replacingExtension(with ext: String) -> FileURL {
-        FileURL(url: asURL.deletingPathExtension().appendingPathExtension(ext))
+    func replacingExtension(with ext: String?) -> FileURL {
+        if let ext {
+            FileURL(url: asURL.deletingPathExtension().appendingPathExtension(ext))
+        }
+        else {
+            FileURL(url: asURL.deletingPathExtension())
+        }
     }
     
     var parent: FileURL? {

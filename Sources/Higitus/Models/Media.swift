@@ -32,14 +32,14 @@ extension Media {
 }
 
 extension Media {
-    func findSubtitles() throws(AppError) -> [Lang: FileURL] {
-        guard let parent = mediaURL.parent else { return [:] }
-        let mediaURLWithoutExtension = mediaURL.asURL.deletingPathExtension().path(percentEncoded: false)
+    func findSubtitles() throws(AppError) -> [MediaSubtitle] {
+        guard let parent = mediaURL.parent else { return [] }
+        let mediaURLWithoutExtension = mediaURL.replacingExtension(with: nil).asPath
         
-        var subtitles = [Lang: FileURL]()
+        var subtitles = [MediaSubtitle]()
         
         for file in try FileManager.default.children(at: parent, ignoringUnderscores: false) {
-            guard file.asURL.pathExtension.lowercased() == "srt" else { continue }
+            guard MediaSubtitle.supportedExtensions.contains(file.asURL.pathExtension.lowercased()) else { continue }
             guard file.asPath.lowercased().hasPrefix(mediaURLWithoutExtension.lowercased()) else { continue }
             
             let subtitleName = file.asPath.replacingOccurrences(of: mediaURLWithoutExtension + ".", with: "", options: .caseInsensitive).lowercased()
@@ -51,7 +51,7 @@ extension Media {
                 continue
             }
             
-            subtitles[lang] = file
+            subtitles.append(MediaSubtitle(path: file, lang: lang))
         }
         
         return subtitles
@@ -63,9 +63,9 @@ extension Media {
         let adaptedURL = try suggestedURL.adapted(folderCreation: folderCreation)
         try mediaURL.move(to: adaptedURL)
 
-        for (language, subtitleURL) in try findSubtitles() {
-            let newSubtitleURL = adaptedURL.replacingExtension(with: "\(language).srt")
-            try subtitleURL.move(to: newSubtitleURL)
+        for subtitle in try findSubtitles() {
+            let newSubtitleURL = adaptedURL.replacingExtension(with: "\(subtitle.lang).srt")
+            try subtitle.path.move(to: newSubtitleURL)
         }
     }
 }
