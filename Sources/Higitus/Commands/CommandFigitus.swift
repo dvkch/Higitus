@@ -118,6 +118,8 @@ struct CommandFigitus: ParsableCommand {
             }
         }
         
+        print("---------------")
+        print("Cleaning up: \(downloadsURL.asPath)")
         try FileManager.default.cleanup(at: downloadsURL, isDeletable: false)
     }
 }
