@@ -45,11 +45,26 @@ extension FileManager {
     func cleanup(at url: FileURL, isDeletable: Bool) throws(AppError) {
         guard url.isDirectory else { return }
         
-        for child in try self.children(at: url, ignoringUnderscores: true) {
+        let children = try self.children(at: url, ignoringUnderscores: true)
+        let containsMedia = children.contains { $0.asMedia != nil && !$0.isCleanupable }
+        
+        for child in children {
             if child.isDirectory {
-                try cleanup(at: child, isDeletable: true)
+                if child.asURL.lastPathComponent.lowercased() == "subs" {
+                    // Subtitles only matter while their media is still here:
+                    // delete the whole folder once it's gone, otherwise leave it untouched
+                    if !containsMedia {
+                        try child.delete()
+                    }
+                }
+                else {
+                    try cleanup(at: child, isDeletable: true)
+                }
             }
             else if child.isCleanupable {
+                try child.delete()
+            }
+            else if !containsMedia && MediaSubtitle.supportedExtensions.contains(child.asURL.pathExtension.lowercased()) {
                 try child.delete()
             }
         }
