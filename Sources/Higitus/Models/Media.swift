@@ -10,7 +10,7 @@ import Foundation
 struct Media {
     init(_ url: FileURL) throws(AppError) {
         self.mediaURL = url
-        guard Media.supportedExtensions.contains(url.asURL.pathExtension) else {
+        guard Media.supportedExtensions.contains(url.asURL.pathExtension.lowercased()) else {
             throw .notAMediaFile(url)
         }
     }
@@ -37,29 +37,35 @@ extension Media {
             MediaSubtitle(url: $0, for: self)
         }
         
-        var groupedSubtitles = subtitles.reduce(into: [:]) { groups, sub in
+        let groupedSubtitles = subtitles.reduce(into: [Lang: [MediaSubtitle]]()) { groups, sub in
             groups[sub.lang, default: []].append(sub)
         }
-        for lang in groupedSubtitles.keys {
-            groupedSubtitles[lang] = groupedSubtitles[lang]!.sorted(by: { sub1, sub2 in
-                // TODO: allow the user to prefer HI over regular via env var
+        return groupedSubtitles.values.compactMap { subs in
+            // TODO: allow the user to prefer HI over regular via env var
+            subs.min(by: { sub1, sub2 in
                 if !sub1.isHI && sub2.isHI { return true }
                 if sub1.isHI && !sub2.isHI { return false }
-                return true
+                return sub1.url.fileSize > sub2.url.fileSize
             })
         }
-        return groupedSubtitles.values.compactMap { $0.first }
     }
 }
 
 extension Media {
     func move(to suggestedURL: FileURL, folderCreation: FolderCreationPolicy) throws(AppError) {
+        let subtitles = try findSubtitles()
+
         let adaptedURL = try suggestedURL.adapted(folderCreation: folderCreation)
         try mediaURL.move(to: adaptedURL)
 
-        for subtitle in try findSubtitles() {
+        for subtitle in subtitles {
             let newSubtitleURL = adaptedURL.replacingExtension(with: "\(subtitle.lang).srt")
-            try subtitle.url.move(to: newSubtitleURL)
+            do {
+                try subtitle.url.move(to: newSubtitleURL)
+            }
+            catch {
+                Log.w("Subtitle", "Couldn't move \(subtitle.url.asPath): \(error.localizedDescription)")
+            }
         }
     }
 }

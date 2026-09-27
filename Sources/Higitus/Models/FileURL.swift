@@ -74,7 +74,13 @@ extension FileURL {
     var exists: Bool {
         return FileManager.default.fileExists(atPath: asPath)
     }
+    
+    var fileSize: Int {
+        return (try? asURL.resourceValues(forKeys: Set([.fileSizeKey])).fileSize) ?? 0
+    }
+}
 
+extension FileURL {
     func touch(contents: String? = nil) {
         if !FileManager.default.fileExists(atPath: asPath) {
             _ = FileManager.default.createFile(atPath: asPath, contents: contents?.data(using: .utf8))

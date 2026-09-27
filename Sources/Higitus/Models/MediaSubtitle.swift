@@ -26,7 +26,7 @@ extension MediaSubtitle {
             .split(whereSeparator: { ". _-".contains($0) })
             .map { $0.lowercased() }
         let flags = Set(tokens).intersection(Self.hiFlags)
-        let candidates = tokens.filter { !Self.hiFlags.contains($0) }
+        let candidates = tokens.filter { !Self.hiFlags.contains($0) && !Self.ignoredTags.contains($0) }
 
         if let lang = candidates.lazy.compactMap({ Lang(rawValue: $0) }).first {
             self.lang = lang
@@ -98,4 +98,5 @@ extension MediaSubtitle {
 extension MediaSubtitle {
     static let supportedExtensions: Set<String> = ["srt"]
     private static let hiFlags: Set<String> = ["hi", "sdh", "cc"]
+    private static let ignoredTags: Set<String> = ["forced", "default", "full"]
 }
