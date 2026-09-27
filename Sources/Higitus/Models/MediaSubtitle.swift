@@ -74,6 +74,28 @@ extension MediaSubtitle {
 }
 
 extension MediaSubtitle {
+    static func candidateURLs(for media: Media) throws(AppError) -> [FileURL] {
+        guard let parent = media.mediaURL.parent else { return [] }
+        return try candidateURLs(in: parent, insideSubs: false)
+    }
+
+    private static func candidateURLs(in folder: FileURL, insideSubs: Bool) throws(AppError) -> [FileURL] {
+        var results: [FileURL] = []
+        for child in try FileManager.default.children(at: folder, ignoringUnderscores: false) {
+            if child.isDirectory {
+                if insideSubs || child.asURL.lastPathComponent.lowercased() == "subs" {
+                    results += try candidateURLs(in: child, insideSubs: true)
+                }
+            }
+            else if supportedExtensions.contains(child.asURL.pathExtension.lowercased()) {
+                results.append(child)
+            }
+        }
+        return results
+    }
+}
+
+extension MediaSubtitle {
     static let supportedExtensions: Set<String> = ["srt"]
     private static let hiFlags: Set<String> = ["hi", "sdh", "cc"]
 }

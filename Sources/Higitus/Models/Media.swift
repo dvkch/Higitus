@@ -33,14 +33,7 @@ extension Media {
 
 extension Media {
     func findSubtitles() throws(AppError) -> [MediaSubtitle] {
-        guard let parent = mediaURL.parent else { return [] }
-        let subsFolder = FileURL(url: parent.asURL.appending(path: "Subs", directoryHint: .isDirectory))
-        
-        var subtitles = [MediaSubtitle]()
-        subtitles += try FileManager.default.children(at: parent, ignoringUnderscores: false).compactMap {
-            MediaSubtitle(url: $0, for: self)
-        }
-        subtitles += try FileManager.default.children(at: subsFolder, ignoringUnderscores: false).compactMap {
+        let subtitles = try MediaSubtitle.candidateURLs(for: self).compactMap {
             MediaSubtitle(url: $0, for: self)
         }
         
