@@ -16,7 +16,6 @@ import Musl
 import Darwin
 #endif
 
-
 struct FileURL {
     private let url: URL
     
@@ -100,27 +99,53 @@ extension FileURL {
         }
     }
 
-    func matchesPattern(_ pattern: String) -> Bool {
+    func matchesPattern(_ pattern: String, caseSensitive: Bool) -> Bool {
         let patternParts = pattern.split(separator: "/").map(String.init)
         guard asURL.pathComponents.count >= patternParts.count else { return false }
         return zip(asURL.pathComponents.suffix(patternParts.count), patternParts)
-                .allSatisfy { fnmatch($1, $0, 0) == 0 }
+            .allSatisfy {
+                fnmatch(
+                    caseSensitive ? $1 : $1.lowercased(),
+                    caseSensitive ? $0 : $0.lowercased(),
+                    0
+                ) == 0
+            }
     }
     
     var isCleanupable: Bool {
         let patterns = [
-            "*.nfo", "*orrent*.txt", "*.sfv", "RARBG*",
-            "Screens/*.jpg", "Screens/*.png", "Ozlem.png",
-            ".DS_Store", "*.sample.*", "WWW.YTS.*.jpg",
-            "Screenshots/*.jpg", "Other/AhaShare.com.txt",
-            "WWW.YIFY*.jpg", "sample-*.mkv", "sample-*.mp4",
+            ".DS_Store",
+            "*.nfo",
+            "*.sfv",
+
+            "*orrent*.txt",
+            "source.txt",
+
+            "*.sample.*",
+            "sample-*.mkv",
+            "sample-*.mp4",
+
+            "Screens/*.jpg",
+            "Screens/*.png",
+            "Screenshots/*.jpg",
+
             "To keep us going please read.txt",
-            "*www.ETTV.tv*.txt", "WWW.VPPV.LA*.txt",
-            "www.YTS.AM.*", "*www.ettv.to*.txt", "source.txt",
-            "YTSProxies.com.txt", "NEW upcoming releases by Xclusive*",
-            "YTSYifyUP*", "YIFYStatus*",
+            "NEW upcoming releases by Xclusive*",
+
+            "Other/AhaShare.com.txt",
+            "Ozlem.png",
+            "RARBG*",
+            "WWW.VPPV.LA*.txt",
+            "WWW.YIFY*.jpg",
+            "WWW.YTS.*.jpg",
+            "www.YTS.AM.*",
+            "*www.ettv.to*.txt",
+            "*www.ETTV.tv*.txt",
+            "YIFYStatus*",
+            "YTSProxies.com.txt",
+            "YTSYifyUP*",
         ]
-        return patterns.contains(where: { self.matchesPattern($0) })
+        return patterns.contains(where: { self.matchesPattern($0, caseSensitive: false) })
     }
     
     func replacingExtension(with ext: String) -> FileURL {
