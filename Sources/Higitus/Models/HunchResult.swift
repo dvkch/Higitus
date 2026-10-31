@@ -15,7 +15,7 @@ struct HunchResult: Codable {
     let title: String?
     let season: Int?
     let episode: SingleOrArray<Int>?
-    let year: Int?
+    let year: SingleOrArray<Int>?
     let date: String?
     let container: String?
 
@@ -72,6 +72,14 @@ struct HunchResult: Codable {
     let language: String?
     let subtitleLanguage: String?
     let country: String?
+    
+    // MARK: Re-computed
+    var releaseYear: Int? {
+        // hunch returns an array when it finds several years (e.g. folder says
+        // 2007, file says 2008). Pick the earliest one, later years are usually
+        // re-release or encode dates.
+        year?.values.min()
+    }
 
     enum MediaType: String, Codable {
         case movie

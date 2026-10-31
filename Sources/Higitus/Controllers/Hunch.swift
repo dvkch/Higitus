@@ -35,7 +35,8 @@ struct Hunch {
             return try decoder.decode(HunchResult.self, from: data)
         }
         catch {
-            throw .hunchError("Couldnt decode hunch result for \(url.asPath): \(error.localizedDescription)")
+            let json = String(data: data, encoding: .utf8) ?? "<non UTF-8 output>"
+            throw .hunchError("Couldnt decode hunch result for \(url.asPath): \(error)\nhunch output: \(json)")
         }
     }
 }

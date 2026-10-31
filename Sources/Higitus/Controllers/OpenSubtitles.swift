@@ -53,7 +53,7 @@ final class OpenSubtitlesClient {
         case .movie:
             query["type"] = "movie"
             query["query"] = hunch.title
-            query["year"] = hunch.year.map(String.init)
+            query["year"] = hunch.releaseYear.map(String.init)
         case .episode:
             query["type"] = "episode"
             query["query"] = hunch.title

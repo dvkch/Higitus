@@ -229,7 +229,7 @@ extension FileURL {
             return .init(url: result)
             
         case .movie:
-            guard let title = hunch.title, let year = hunch.year else {
+            guard let title = hunch.title, let year = hunch.releaseYear else {
                 throw .couldntGeneratePath(self, hunch)
             }
             var filename = title + " (\(year))"
